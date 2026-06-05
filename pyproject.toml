@@ -1,33 +1,42 @@
 [tool.poetry]
 name = "SolarFocuser"
-version="0.0.1"
+version = "0.0.1"
+description = "Solar-sail asteroid mining: PPO control in a custom spherical-harmonics gravity environment"
 authors = [
-        "Aleksandar Antonic <aantonic@ethz.ch>",
-        "Korbin Hansen"
+    "Aleksandar Antonic <aantonic@ethz.ch>",
+    "Korbin Hansen",
 ]
-
-packages = [
-    { include = "solarfocuser" }
-]
-
 readme = "README.md"
+packages = [
+    { include = "solarfocuser" },
+]
 
 [tool.poetry.dependencies]
 python = ">=3.13,<3.15"
-numpy = "^2.4.4"
-gymnasium = {extras = ["box2d"], version = "^1.2.3"}
-cvxpy = "^1.8.2"
-moviepy = "^2.2.1"
-ipykernel = "^7.2.0"
-tqdm = "^4.67.3"
-otter-grader = "^6.1.6"
-matplotlib = "^3.10.8"
-pandas = "^3.0.2"
-jupyter = {extras = ["lab"], version = "^1.1.1"}
-mosek = "^11.1.10"
-scipy = "^1.17.1"
-pillow = ">11"
 
+# --- core numerics / physics ---
+numpy = "^2.4.4"
+scipy = "^1.17.1"
+
+# --- RL environment + algorithm ---
+gymnasium = "^1.2.3"
+stable-baselines3 = "^2.8.0"     # PPO/SAC implementations (Python 3.13 supported as of 2.8.0)
+torch = "^2.6.0"                 # SB3 backend; install a CUDA build deliberately (see note below)
+
+# --- experiment tracking / logging ---
+tensorboard = "^2.12.0"
+wandb = "*"
+
+# --- analysis / visualization ---
+matplotlib = "^3.10.8"
+pandas = "^2.2.0"
+pillow = ">11"
+moviepy = "^2.2.1"               # render episode rollouts to video
+tqdm = "^4.67.3"
+
+# --- dev / notebooks ---
+ipykernel = "^7.2.0"
+jupyter = { extras = ["lab"], version = "^1.1.1" }
 
 [build-system]
 requires = ["poetry-core"]
