@@ -6,6 +6,9 @@ authors = [
         "Korbin Hansen"
 ]
 
+packages = [
+    { include = "solarfocuser" }
+]
 
 readme = "README.md"
 

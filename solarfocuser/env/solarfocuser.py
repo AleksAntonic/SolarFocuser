@@ -1,3 +1,7 @@
+'''
+Creates the entire environment for simulation
+'''
+
 import copy
 import warnings
 from typing import Dict, List, Tuple
@@ -43,5 +47,9 @@ class SolarFocuser(gym.Env):
             self.window = None
     def create_world(self):
     def create_solar_focuser(self):
+    def create_collector(self):
     def create_sun(self):
+    def create_particles(self):
+    def update_particles(self):
+    def destroy_particles(self):
     def create_asteroid(self):   
