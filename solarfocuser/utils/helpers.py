@@ -4,6 +4,7 @@ import glob
 import numpy as np
 import copy
 import torch
+import argparse
 
 from solarfocuser import ROOT_DIR
 
@@ -92,13 +93,13 @@ def get_paths_from_pattern(files_pattern):
 
 def update_env_cfg_from_args(env_cfg, args):
     if args.dv is not None:
-        env_cfg.viewer.enable_viewer = args.dv
-    # if args.dr is not None:
-    #     env_cfg.viewer.record_camera_imgs = args.dr
+        pass
+        
     if args.num_envs is not None:
-        env_cfg.env.num_envs = args.num_envs
+        object.__setattr__(env_cfg, "num_envs", args.num_envs)
     if args.debug is not None:
-        env_cfg.env.debug = args.debug
+        object.__setattr__(env_cfg, "debug", args.debug)
+        
     return env_cfg
 
 
@@ -159,3 +160,21 @@ class OnnxPolicyExporter(torch.nn.Module):
             output_names=["actions"],
             dynamic_axes={},
         )
+
+
+def get_args():
+    parser = argparse.ArgumentParser(description="SolarFocuser training script arguments")
+    parser.add_argument("--task", type=str, default="focuser", help="Task name to run (registered task)")
+    parser.add_argument("--num-envs", dest="num_envs", type=int, default=None, help="Number of parallel envs")
+    parser.add_argument("--debug", action="store_true", help="Run in debug mode (no logging)")
+    parser.add_argument("--experiment-name", dest="experiment_name", type=str, default=None)
+    parser.add_argument("--run-name", dest="run_name", type=str, default=None)
+    parser.add_argument("--load-run", dest="load_run", type=str, default=None)
+    parser.add_argument("--checkpoint", dest="checkpoint", type=int, default=None)
+    parser.add_argument("--wb", action="store_true", help="Enable wandb logging")
+    parser.add_argument("--dr", action="store_true", dest="dr", help="Record rollout gifs")
+    parser.add_argument("--device", type=str, default="cpu", help="Execution device (cpu or cuda)")
+    parser.add_argument("--headless", action="store_true", help="Disable rendering/viewer")
+    parser.add_argument("--seed", type=int, default=-1, help="Random seed; -1 picks a random seed")
+    parser.add_argument("--dv", action="store_true", default=None, help="Display or toggle rendering viewer")
+    return parser.parse_args()

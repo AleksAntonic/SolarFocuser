@@ -1,6 +1,17 @@
 """SolarFocuser package"""
-from .solarfocuser import SolarFocuser
-from .env_cfg import EnvConfig, State
-from .controller import Controller
+import os
 
-__all__ = ["SolarFocuser", "EnvConfig", "State", "Controller"]
+ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+from solarfocuser.env.focuser_task import SolarFocuser 
+from solarfocuser.cfg.focuser_cfg import EnvConfig, TrainConfig, State, UserArgs
+from solarfocuser.utils.task_registry import task_registry
+
+task_registry.register(
+    name="focuser",                     # Matches your CLI flag: --task focuser
+    task_class=SolarFocuser,
+    env_cfg=EnvConfig(),
+    train_cfg=TrainConfig()             # Assuming TrainConfig lives in focuser_cfg.py
+)
+
+__all__ = ["ROOT_DIR", "SolarFocuser", "EnvConfig", "TrainConfig", "State", "UserArgs", "task_registry"]

@@ -1,0 +1,170 @@
+{
+  "train_cfg": {
+    "algorithm": {
+      "bootstrap": true,
+      "clip_param": 0.2,
+      "desired_kl": 0.01,
+      "entropy_coef": 0.005,
+      "gamma": 0.99,
+      "lam": 0.95,
+      "learning_rate": 0.0003,
+      "max_grad_norm": 1.0,
+      "num_learning_epochs": 5,
+      "num_mini_batches": 4,
+      "schedule": "adaptive",
+      "surrogate_coef": 1.0,
+      "use_clipped_value_loss": true,
+      "value_loss_coef": 1.0
+    },
+    "algorithm_name": "PPO",
+    "policy": {
+      "activation": "elu",
+      "actor_hidden_dims": [
+        256,
+        128,
+        64
+      ],
+      "critic_hidden_dims": [
+        256,
+        128,
+        64
+      ],
+      "log_std_init": 0.0
+    },
+    "runner": {
+      "checkpoint": -1,
+      "experiment_name": "myexp",
+      "load_run": -1,
+      "max_iterations": 1000,
+      "normalize_observation": true,
+      "num_steps_per_env": 64,
+      "record_gif": false,
+      "record_gif_interval": 50,
+      "record_iters": 2,
+      "resume": false,
+      "run_name": "run1",
+      "save_interval": 100,
+      "wandb": false,
+      "wandb_group": "focuser"
+    },
+    "seed": 42
+  },
+  "env_cfg": {
+    "AU": 149597870700.0,
+    "G": 6.674e-11,
+    "asteroid_albedo": 0.2,
+    "asteroid_body_color": [
+      110,
+      95,
+      80
+    ],
+    "asteroid_cp": 800.0,
+    "asteroid_density": 2700.0,
+    "asteroid_diameter": 490.0,
+    "asteroid_edge_color": [
+      70,
+      60,
+      50
+    ],
+    "asteroid_radius": 245.0,
+    "asteroid_render_segments": 14,
+    "asteroid_rotation_period": 15480.0,
+    "background_color": [
+      5,
+      5,
+      20
+    ],
+    "bounds_margin": 0.05,
+    "box2d_pos_iters": 10,
+    "box2d_vel_iters": 10,
+    "c_light": 299792458.0,
+    "capture_distance": 50.0,
+    "capture_speed": 0.5,
+    "debug": false,
+    "device": "cpu",
+    "enable_mutual_gravity": true,
+    "enable_radiation_pressure": true,
+    "enable_viewer": false,
+    "env": {
+      "max_episode_length": 1200,
+      "num_actions": 3,
+      "num_envs": 16,
+      "num_observations": 9,
+      "num_privileged_obs": null,
+      "play": false
+    },
+    "fps": 60,
+    "heliocentric_distance": 149597870700.0,
+    "initial_asteroid_position": null,
+    "initial_asteroid_velocity": null,
+    "initial_position": null,
+    "initial_state": null,
+    "mass_correction_factor": 1.0,
+    "max_episode_steps": 1000000,
+    "n_stars": 200,
+    "num_envs": 8,
+    "random_initial_position": true,
+    "rcs_cluster_size": 4,
+    "rcs_fine_points": 6,
+    "rcs_fine_thrust": 0.9,
+    "rcs_max_thrust_per_axis": 17.6,
+    "rcs_single_thrust": 1.1,
+    "rcs_thrust_points": 8,
+    "rcs_thruster_range": 1.0,
+    "rcs_torque_arm": 100.0,
+    "reaction_wheel_range": 1.0,
+    "reaction_wheel_torque": 0.4,
+    "reaction_wheels": 4,
+    "reflectivity_range": 1.0,
+    "render_asteroid_center_position": true,
+    "render_force_vectors": false,
+    "render_fps": 60,
+    "render_sail_center_position": true,
+    "render_sun_direction": true,
+    "rewards": {
+      "capture_bonus": 100.0,
+      "position_sigma": 500.0,
+      "scales": {
+        "action_rate": 0.005,
+        "base_velocity": 0.02,
+        "track_orientation": 0.05,
+        "track_position": 1.0
+      },
+      "termination_crash": -100.0
+    },
+    "sail_areal_density": 0.05,
+    "sail_body_color": [
+      230,
+      230,
+      245
+    ],
+    "sail_edge_color": [
+      150,
+      160,
+      200
+    ],
+    "sail_reflectivity": 0.85,
+    "sail_reflector_radius": 100.0,
+    "sail_render_segments": 12,
+    "sail_total_mass": 1000.0,
+    "scale": 0.25,
+    "seed": 42,
+    "sim_dt": 1.0,
+    "solar_flux_1au": 1361.0,
+    "stars": true,
+    "sun_direction": [
+      1.0,
+      0.0
+    ],
+    "sun_radius_px": 28.0,
+    "sun_render_distance": 0.45,
+    "viewer": {
+      "enable_viewer": false
+    },
+    "viewport_height": 800,
+    "viewport_width": 1000,
+    "world_height": 3200.0,
+    "world_width": 4000.0,
+    "world_width_m": 4000.0
+  }
+}
