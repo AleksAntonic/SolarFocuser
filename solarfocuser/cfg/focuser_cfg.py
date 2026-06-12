@@ -13,7 +13,7 @@ FocuserCfgPPO is the train config consumed by runners/algs/ppo.py.
 """
 
 from enum import Enum
-from math import pi
+import math
 
 
 class State(Enum):
@@ -153,8 +153,15 @@ class EnvConfig:
     # ------------------------------------------------------------------ #
     rcs_single_thrust = 1.1          # N, Aerojet MR-103
     rcs_cluster_size = 4
-    rcs_thrust_points = 8
-    rcs_max_thrust_per_axis = rcs_single_thrust * rcs_cluster_size * (rcs_thrust_points / 2.0)
+    rcs_thrust_points = 8 # Must be even
+
+    # Scaling down max thrust to account for the variation in the moment arms of the RCS clusters
+    rcs_angle = 2.0 * math.pi / rcs_thrust_points
+    working_angle = rcs_angle / 2.0
+    rcs_max_thrust_per_axis = 0.0
+    for cluster in range(rcs_thrust_points / 2.0):
+        rcs_max_thrust_per_axis += rcs_single_thrust * rcs_cluster_size * math.sin(working_angle)
+        working_angle += rcs_angle
 
     rcs_fine_thrust = 0.9
     rcs_fine_points = 6
