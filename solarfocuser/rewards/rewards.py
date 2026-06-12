@@ -49,3 +49,22 @@ class REWARDS:
     def reward_action_rate(task):
         """Penalize rapid action changes (thruster chatter)."""
         return -torch.sum(torch.square(task.actions - task.last_actions), dim=1)
+
+    @staticmethod
+    def reward_crash(task):
+        """Penalize crashing (touching the asteroid or leaving the world).
+
+        task.crashed is a 0/1 tensor set by the task on the terminal step.
+        Negative sign lives here; set a positive scale in cfg (e.g. 100.0)
+        for a -100 terminal reward.
+        """
+        return -task.crashed
+
+    @staticmethod
+    def reward_capture(task):
+        """Reward reaching the capture window slowly (mission success).
+
+        task.captured is a 0/1 tensor set by the task on the terminal step.
+        Positive scale in cfg (e.g. 100.0) yields a +100 terminal reward.
+        """
+        return task.captured

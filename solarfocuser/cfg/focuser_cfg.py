@@ -64,17 +64,27 @@ class EnvConfig:
     class viewer:
         enable_viewer = False         # registry writes this into the saved json
 
-    # reward term scales; each key 'name' maps to REWARDS.reward_<name>(task)
-    # terminal bonuses are applied directly by the task
+    # reward terms: each name maps to REWARDS.reward_<name>(task), the ONLY
+    # source of reward in the system (terminals included)
     class rewards:
+        # which reward terms to use (order determines logging keys)
+        terms = [
+            "track_position",
+            "track_orientation",
+            "base_velocity",
+            "action_rate",
+            "crash",
+            "capture",
+        ]
+
         class scales:
             track_position = 1.0      # exp(-dist) shaping toward the asteroid
             track_orientation = 0.05  # keep the concentrator pointed at the sun
             base_velocity = 0.02      # penalize relative speed
             action_rate = 0.005       # penalize action changes (smoothness)
+            crash = 100.0             # terminal: REWARDS.reward_crash returns -1 -> -100
+            capture = 100.0           # terminal: REWARDS.reward_capture returns +1 -> +100
 
-        termination_crash = -100.0    # sail touched the asteroid / left bounds
-        capture_bonus = 100.0         # reached the capture window slowly
         position_sigma = 500.0        # m, length scale of the position shaping
 
     # ------------------------------------------------------------------ #

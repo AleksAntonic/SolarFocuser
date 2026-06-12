@@ -104,22 +104,30 @@ class _SailWorld(gym.Env):
             raise TypeError(
                 f"args must be an EnvConfig instance, got {type(args).__name__}"
             )
-            
+
         self.cfg = args
         self._args = args
         self._parse_user_args()
 
-        # 1. Define the physical environment mechanics FIRST
+        # environment -- ZERO world gravity; gravity is applied manually
         self.world = Box2D.b2World(gravity=(0, 0))
 
-        # 2. Fully construct structural action dimensions
+        # ------------------------------------------------------------------ #
+        # ACTION SPACE
+        #   action[0]: RCS thrust along body x (-1..1) * max thrust per axis
+        #   action[1]: RCS thrust along body y (-1..1) * max thrust per axis
+        #   action[2]: reaction-wheel torque (-1..1) * max wheel torque
+        # ------------------------------------------------------------------ #
         self.action_space = spaces.Box(
             low=np.array([-1.0, -1.0, -1.0]),
             high=np.array([1.0, 1.0, 1.0]),
             dtype=np.float64,
         )
 
-        # 3. Fully construct observational spaces bounds
+        # ------------------------------------------------------------------ #
+        # OBSERVATION SPACE -- full 12-element state (see State enum)
+        # positions are bounded by the world, everything else unbounded
+        # ------------------------------------------------------------------ #
         w, h = self.cfg.world_width, self.cfg.world_height
         self.observation_space = spaces.Box(
             low=np.array(
@@ -133,13 +141,13 @@ class _SailWorld(gym.Env):
             dtype=np.float64,
         )
 
-        # 4. Instantiate downstream track handles
+        # bodies
         self.sail = None
         self.asteroid = None
         self.particles = []
         self.drawlist = []
 
-        # 5. Connect rendering setups
+        # rendering
         assert render_mode is None or render_mode in self.metadata["render_modes"]
         self.render_mode = render_mode
         self.window = None
@@ -147,7 +155,7 @@ class _SailWorld(gym.Env):
         self.canvas = None
         self.stars = []
 
-        # 6. Initialize tracking states
+        # state variables
         self.state = []
         self.previous_state = None
         self.game_over = False
@@ -155,10 +163,10 @@ class _SailWorld(gym.Env):
         self.prev_shaping = None
         self.step_count = 0
 
+        # cached derived physical quantities (filled at reset)
         self._sail_mass = None
         self._asteroid_mass = None
 
-        # 7. Safe to boot the reset framework now that spaces are built
         self.reset()
 
     def reset(self, seed=None, options=None):
@@ -290,10 +298,13 @@ class _SailWorld(gym.Env):
         self.state = self.__generate_state()
         self._update_particles()
 
-        reward = self.__compute_reward(self.state, action)
+        # NOTE: this env computes NO reward. All reward terms -- shaped AND
+        # terminal -- live exclusively in solarfocuser.rewards.REWARDS and are
+        # evaluated by the vectorized SolarFocuser task. This env only reports
+        # the physics state and the crash/capture termination flags.
+        reward = 0.0
 
         # termination conditions
-        done = False
         truncated = False
 
         sx, sy = self.state[XX], self.state[YY]
@@ -305,14 +316,10 @@ class _SailWorld(gym.Env):
             or sy > (1 + m) * self.cfg.world_height
         )
 
-        if self.game_over or out_of_bounds:
-            done = True
-            reward = -100
-
+        crash = bool(self.game_over or out_of_bounds)
         # success: close to the asteroid surface at low relative speed
-        if self.__check_capture(self.state):
-            done = True
-            reward = +100
+        capture = (not crash) and self.__check_capture(self.state)
+        done = crash or capture
 
         self.step_count += 1
         if self.step_count >= self.cfg.max_episode_steps:
@@ -321,12 +328,16 @@ class _SailWorld(gym.Env):
         if self.render_mode == "human":
             self._render_frame()
 
+        info = self.__build_info()
+        info["crash"] = crash
+        info["capture"] = capture
+
         return (
             np.array(self.state),
             reward,
             done,
             truncated,
-            self.__build_info(),
+            info,
         )
 
     def close(self):
@@ -487,41 +498,6 @@ class _SailWorld(gym.Env):
         ) ** 2
         pressure = flux / self.cfg.c_light
         return (1.0 + self._actual_reflectivity) * pressure * area
-
-    def __compute_reward(self, state: list, action: np.ndarray) -> float:
-        """Reward based on closing distance/speed to the asteroid, penalising
-        attitude error, spin, and control effort. Shaping mirrors the lunar
-        lander / rocket-lander style.
-        """
-        dx = state[XX] - state[AST_X]
-        dy = state[YY] - state[AST_Y]
-        dist = np.hypot(dx, dy)
-
-        dvx = state[X_DOT] - state[AST_X_DOT]
-        dvy = state[Y_DOT] - state[AST_Y_DOT]
-        rel_speed = np.hypot(dvx, dvy)
-
-        # normalise by world scale
-        dist_norm = dist / self.cfg.world_width
-        speed_norm = rel_speed / 10.0  # 10 m/s reference
-
-        shaping = (
-            -100 * dist_norm
-            - 50 * speed_norm
-            - 20 * abs(state[THETA_DOT])
-        )
-
-        reward = 0.0
-        if self.prev_shaping is not None:
-            reward = shaping - self.prev_shaping
-        self.prev_shaping = shaping
-
-        # control-effort penalties (RCS more expensive than wheels)
-        reward -= abs(action[0]) * 0.10
-        reward -= abs(action[1]) * 0.10
-        reward -= abs(action[2]) * 0.01
-
-        return reward
 
     def __check_capture(self, state: list) -> bool:
         """Success when the sail is just above the asteroid surface and slow.
@@ -970,11 +946,14 @@ class SolarFocuser:
             rm = (render_mode if render_mode is not None else "rgb_array") if i == 0 else None
             self.envs.append(_SailWorld(args=args, render_mode=rm))
 
-        # reward terms resolved from cfg.rewards.scales -> REWARDS.reward_<name>
+        # reward terms: prefer explicit cfg.rewards.terms list, fallback to
+        # the names defined under cfg.rewards.scales
         self.reward_terms = []
-        for name in vars(args.rewards.scales):
-            if name.startswith("_"):
-                continue
+        reward_names = getattr(args.rewards, "terms", None)
+        if reward_names is None:
+            reward_names = [n for n in vars(args.rewards.scales) if not n.startswith("_")]
+
+        for name in reward_names:
             scale = getattr(args.rewards.scales, name)
             fn = getattr(REWARDS, "reward_" + name, None)
             assert fn is not None, f"REWARDS.reward_{name} is not implemented"
@@ -997,6 +976,8 @@ class SolarFocuser:
         self.surface_dist = torch.zeros(N, device=self.device)
         self.actions = torch.zeros(N, self.num_actions, device=self.device)
         self.last_actions = torch.zeros(N, self.num_actions, device=self.device)
+        self.crashed = torch.zeros(N, device=self.device)
+        self.captured = torch.zeros(N, device=self.device)
 
         # sun angle from the configured direction (constant)
         sd = np.asarray(args.sun_direction, dtype=float)
@@ -1048,14 +1029,17 @@ class SolarFocuser:
         captured = torch.zeros(self.num_envs, device=self.device)
 
         for i, env in enumerate(self.envs):
-            state, r_env, done, _trunc, _info = env.step(acts_np[i])
+            state, _r_env, done, _trunc, info = env.step(acts_np[i])
             self.raw_states[i] = torch.from_numpy(np.asarray(state, dtype=np.float32))
-            if done:
-                # the gym env returns +100 only for the capture success branch
-                if r_env > 0:
-                    captured[i] = 1.0
-                else:
-                    crashed[i] = 1.0
+            if info["crash"]:
+                crashed[i] = 1.0
+            elif info["capture"]:
+                captured[i] = 1.0
+
+        # expose terminal flags as task buffers so REWARDS terms (reward_crash,
+        # reward_capture) can read them like any other physics quantity
+        self.crashed = crashed
+        self.captured = captured
 
         self.episode_length_buf += 1
         self._refresh_buffers()
@@ -1070,14 +1054,13 @@ class SolarFocuser:
 
         self.reset_buf = torch.clamp(crashed + captured + self.time_out_buf, max=1.0)
 
-        # rewards: shaped terms from rewards.py + terminal bonuses
+        # rewards: EVERY term (shaped and terminal) comes from
+        # solarfocuser.rewards.REWARDS -- no reward is computed anywhere else
         self.rew_buf[:] = 0.0
         for name, scale, fn in self.reward_terms:
             term = fn(self) * scale
             self.rew_buf += term
             self.episode_sums[name] += term
-        self.rew_buf += crashed * self.cfg.rewards.termination_crash
-        self.rew_buf += captured * self.cfg.rewards.capture_bonus
         self.episode_sums["total"] += self.rew_buf
 
         # build infos BEFORE resetting (so logged sums are the finished episodes')

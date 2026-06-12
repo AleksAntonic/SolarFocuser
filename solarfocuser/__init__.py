@@ -8,10 +8,10 @@ from solarfocuser.cfg.focuser_cfg import EnvConfig, TrainConfig, State, UserArgs
 from solarfocuser.utils.task_registry import task_registry
 
 task_registry.register(
-    name="focuser",                     # Matches your CLI flag: --task focuser
+    name="focuser",                     
     task_class=SolarFocuser,
     env_cfg=EnvConfig(),
-    train_cfg=TrainConfig()             # Assuming TrainConfig lives in focuser_cfg.py
+    train_cfg=TrainConfig()             
 )
 
 __all__ = ["ROOT_DIR", "SolarFocuser", "EnvConfig", "TrainConfig", "State", "UserArgs", "task_registry"]

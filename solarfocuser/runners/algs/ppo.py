@@ -324,8 +324,6 @@ class PPO:
         self.writer.add_scalar('Perf/learning_time', locs['learn_time'], locs['it'])
         if len(locs['rew_buffer']) > 0:
             self.writer.add_scalar('Train/mean_episode_reward', statistics.mean(locs['rew_buffer']), locs['it'])
-            self.writer.add_scalar('Train/mean_episode_length', statistics.mean(locs['len_buffer']), locs['it'])
-
         if self.cfg.wandb:
             self.writer.flush_logger(locs['it'])
 
@@ -339,6 +337,7 @@ class PPO:
                           f"""{'Value function loss:':>{pad}} {locs['mean_value_loss']:.4f}\n"""
                           f"""{'Surrogate loss:':>{pad}} {locs['mean_surrogate_loss']:.4f}\n"""
                           f"""{'Mean action noise std:':>{pad}} {mean_std.item():.2f}\n"""
+                          f"""{'Mean episode reward:':>{pad}} {statistics.mean(locs['rew_buffer']):.2f}\n"""
                           f"""{'Mean episode length:':>{pad}} {statistics.mean(locs['len_buffer']):.2f}\n""")
         else:
             log_string = (f"""{'#' * width}\n"""
